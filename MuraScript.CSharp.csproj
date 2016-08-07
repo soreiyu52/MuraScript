@@ -73,7 +73,7 @@
     <Compile Include="Assets\Script\main.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Assets\txt\test.txt" />
+    <None Include="Assets\Resources\txt\test.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\SyntaxTree\UnityVS\2015\UnityVS.CSharp.targets" />
 </Project>
