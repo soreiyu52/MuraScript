@@ -1,6 +1,6 @@
-﻿dora
-nobi
-ore
-zyai
-　
-  
+﻿//main
+int a=0;
+if(a >= b){
+     println["dora"];
+}
+//end
