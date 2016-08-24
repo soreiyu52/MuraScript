@@ -9,8 +9,14 @@ public class main : MonoBehaviour
     void Start()
     {
         Debug.Log("start");
-        Lexer mura = new Lexer();
-        mura.ReadFile("Test");
+        Lexer lexer = new Lexer();
+        lexer.ReadFile("Test");
+
+        foreach (Token queue in lexer.queue)
+        {
+            Debug.Log(queue+"=>"+ queue.getText()+ " ;" +queue.getLineNumber());
+            Debug.Log(" id="+queue.isIdentifier()+" str:"+ queue.isString()+" num:"+queue.isNumber());
+        }
         Debug.Log("end");
     }
 
@@ -19,6 +25,4 @@ public class main : MonoBehaviour
     {
 
     }
-
-
 }

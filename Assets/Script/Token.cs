@@ -3,33 +3,33 @@ using System.Collections;
 
 /// <summary>
 /// Tokenの定義
-/// protected Token(int line)  読み込んだスクリプトの行を取得するコンストラクタ
+/// protected Token(int lineNo)  読み込んだスクリプトの行を取得するコンストラクタ
 /// public int getLineNumber() 今何行目か返す
 /// public bool isIdentifier() 識別子の判定を返す(true/false) 
 /// public bool isNumber()     整数リテラルかの判定を返す(true/false)
 /// public bool isString()     文字列リテラルかの判定を返す(true/false)
 /// public void EOF()          最終行を示す特殊なメソッド
+/// 継承先でメソッドを変えるため、仮想メソッドにしておく。
 /// </summary>
 namespace Mura
 {
-    public abstract class Token : MonoBehaviour
+    public abstract class Token
     {
-        private int lineNumber;
+        internal int lineNo;
 
-        protected Token(int line)
+        public Token(int lineNo)
         {
-            lineNumber = line;
+            this.lineNo = lineNo;
         }
-        public int getLineNumber() { return lineNumber; }
-        public bool isIdentifier() { return false; }
-        public bool isNumber() { return false; }
-        public bool isString() { return false; }
+        public virtual int getLineNumber() { return lineNo; }
+        public virtual bool isIdentifier() { return false; }
+        public virtual bool isNumber() { return false; }
+        public virtual bool isString() { return false; }
         //public bool getNumber() { throw new MuraException("not number token"); }
-        public string getText() { return ""; }
-
+        public virtual string getText() { return ""; }
         public void EOF()
         {
-            lineNumber = -1;
+            lineNo = -1;
         }
     }
 }

@@ -1,6 +1,9 @@
-﻿//main
-int a=0;
-if(a >= b){
-     println["dora"];
+﻿23
+asd
+as33
+if(a=10){
+("aaaa")
 }
-//end
+344
+asd
+あだｒ
