@@ -23,17 +23,14 @@ namespace Mura
 {
     public class Lexer
     {
-        private int LINE_NUBER = 0;
+        private int LINE_NUMBER;
         public static string regexPat = "\\s*((//.*)|([0-9]+)|(\"(\\\\\"|\\\\\\\\|\\\\n|[^\"])*\")|[A-Z_a-z][A-Z_a-z0-9]*|==|<=|>=|&&|\\|\\||[!-~]|" +
-        "([ぁ-んァ-ヴ一-龠０-９ａ-ｚＡ-Ｚa-zA-Z0-9！”＃＄％＆’（）＝～｜‘｛＋＊｝＜＞？＿－＾￥＠【『「；：」』】、。・]*))?";
+        "([ぁ-んァ-ヴ一-龠０-９ａ-ｚＡ-Ｚa-zA-Z0-9！▽”＃＄％＆’（）＝～｜‘｛＋＊｝＜＞？＿ー－＾￥＠【『「；：」』】、。・]*))?";
         Regex defaultRegex = new Regex(regexPat);
-        public List<Token> queue = new List<Token>();
- 
-        /// <summary>
-        /// 行番号を取り出す。
-        /// </summary>
-        /// <returns></returns>
-        private int getLineNumber(){return LINE_NUBER;}
+        List<Parser> pa = new List<Parser>();
+
+        public Lexer(){ LINE_NUMBER = 0; }
+        private int getLineNumber() { return LINE_NUMBER; }
 
         /// <summary>
         /// ファイル読み込み。
@@ -42,37 +39,49 @@ namespace Mura
         public void ReadFile(string scriptName)
         {
             // TextAssetとして、Resourcesフォルダからテキストデータをロードする
+            // ここはunity特有。
             TextAsset stageTextAsset = Resources.Load("txt/" + scriptName) as TextAsset;
             // 文字列を代入
-            // using句をしようすることにより、わざわざ閉じなくても良いようにする。
             using (StringReader reader = new StringReader(stageTextAsset.text))
             {
-                //一行づつ分解
                 while (reader.Peek() >= 0)
                 {
-                    //行を足す。
-                    LINE_NUBER++;
                     ReadLine(reader.ReadLine());
+                    //行の終わりには必ずeofがつく。
+                    pa[getLineNumber()].post(Token.token_eof, "");
+                    OutPut();
+                    LINE_NUMBER++;
+                    //Debug.Log("LinNo=" + getLineNumber());
                 }
-                Debug.Log("LinNo=" + getLineNumber());
             }
+        }
+
+        /// <summary>
+        /// 行出力用メソッド
+        /// </summary>
+        public void OutPut()
+        {
+            object v;
+            if (pa[getLineNumber()].accept(out v))
+                Debug.Log(getLineNumber() + ":Answer=" + v);
         }
 
         /// <summary>
         /// 受け取った行をトークンに分解する。
         /// </summary>
         /// <param name="ReadLine"></param>
+        /// 
         protected void ReadLine(string readLine)
         {
-            //String line = readLine;
-            //int lineNo = getLineNumber();
+            Debug.Log("=" + readLine);
             //受け取った行から正規表現にマッチするものを取り出す。
+            pa.Add(new Parser(new SemanticAction()));
             foreach (Match match in defaultRegex.Matches(readLine))
             {
                 if (match.Success && match.Length != 0)
                 {
                     //token毎に振り分け
-                    addToken(match);
+                    addToken(match, getLineNumber());
                 }
             }
         }
@@ -89,135 +98,52 @@ namespace Mura
         /// Debug.Log("match.Groups7 " + match.Groups[7]);
         /// </summary>
         /// <param name="match"></param>
-        protected void addToken(Match match)
+        public void addToken(Match match, int lineNumber)
         {
+            //Parser pa = new Parser(new SemanticAction());
             //スペースだけのものは排除。
             if (match.Groups[1].Value != string.Empty) {
                 // comment判断
                 if (match.Groups[2].Value == string.Empty)
-                { 
-                    Token token;
+                {
+                    //Token token;
                     //整数判断
                     if (match.Groups[3].Value != string.Empty)
                     {
                         //Debug.Log("数字: " + match.Groups[1].Value);
-                        //NumTokenを生成。
-                        token = new NumToken(getLineNumber(), int.Parse(match.Groups[1].Value));
+                        //NumTokenを生成。                        
+                        pa[lineNumber].post(Token.token_Number, Int32.Parse(match.Groups[1].Value));
                     }
                     //文字リテラル判断
                     else if (match.Groups[4].Value != string.Empty)
                     {
                         //Debug.Log("文字列: " + match.Groups[1].Value);
                         //StrTokenを生成。
-                        token = new StrToken(getLineNumber(), match.Groups[4].Value);
+                        //token = new StrToken(getLineNumber(), match.Groups[4].Value);
                     }
                     //シナリオ（全角）判断
                     else if (match.Groups[6].Value != string.Empty)
                     {
                         //Debug.Log("これはシナリオ: " + match.Groups[1].Value);
                         //ScenarioTokenを生成。
-                        token = new ScenarioToken(getLineNumber(), match.Groups[6].Value);
+                        //token = new ScenarioToken(getLineNumber(), match.Groups[6].Value);
                     }
                     //それ以外。変数名などもここ。
                     else
                     {
                         //Debug.Log("それ以外: " + match.Groups[1].Value);
                         //IdTokenを生成。
-                        token = new IdToken(getLineNumber(), match.Groups[1].Value);
+                        if (match.Groups[1].Value == "+")
+                            pa[lineNumber].post(Token.token_Add, match.Groups[1].Value);
+                        if (match.Groups[1].Value == "/")
+                            pa[lineNumber].post(Token.token_Div, match.Groups[1].Value);
+                        if (match.Groups[1].Value == "*")
+                            pa[lineNumber].post(Token.token_Mul, match.Groups[1].Value);
+                        if (match.Groups[1].Value == "-")
+                            pa[lineNumber].post(Token.token_Sub, match.Groups[1].Value);
                     }
-                    queue.Add(token);
-                    //Debug.Log(token + " :" + token.getText()+" :");*/
                 }
             }
         }
     }
-
-    /// <summary>
-    /// 整数のtoken
-    /// isNumber()  :tureを返す。他はfalseを継承。(tokenから)
-    /// getText()   :整数をstringにしたものを返す
-    /// getNumber() :整数を返す。
-    /// lineNo      :行番号
-    /// valse       :数字
-    /// </summary>
-    public class NumToken :Token
-    {
-        public int value;
-        //オーバーライドされた基底クラス TokenのコンストラクターのlineNoに代入。
-        public NumToken(int lineNo,int value) : base(lineNo)
-        {
-            base.lineNo = lineNo;
-            this.value = value;
-        }
-        //基底クラスに同名クラスがあるので隠蔽するのでnew演算子が必要。
-        public override bool isNumber(){ return true; }
-        public override string getText(){ return value.ToString(); }
-        public int getNumber() { return value; }
-    }
-
-    /// <summary>
-    /// 文字リテラルのtoken
-    /// isString()  :tureを返す。他はfalseを継承。(tokenから)
-    /// getText()   :文字リテラルを返す。
-    /// lineNo      :行番号
-    /// litral      :文字リテラル
-    /// </summary>
-    public class StrToken : Token
-    {
-        private string literal;
-        //オーバーライドされた基底クラス TokenのコンストラクターのlineNoに代入。
-        internal StrToken(int lineNo, string literal) : base(lineNo)
-        {
-            base.lineNo = lineNo;
-            this.literal = literal;
-        }
-        //基底クラスに同名クラスがあるので隠蔽するのでnew演算子が必要。
-        public override bool isString() { return true; }
-        public override string getText() { return literal; }
-    }
-
-    /// <summary>
-    /// 文字リテラル(シナリオ)のtoken
-    /// isString()  :tureを返す。他はfalseを継承。(tokenから)
-    /// getText()   :文字リテラルを返す。
-    /// lineNo      :行番号
-    /// litral      :文字リテラル
-    /// </summary>
-    public class ScenarioToken : Token
-    {
-        private string scenario;
-        //オーバーライドされた基底クラス TokenのコンストラクターのlineNoに代入。
-        internal ScenarioToken(int lineNo, string scenario) : base(lineNo)
-        {
-            base.lineNo = lineNo;
-            this.scenario = scenario;
-        }
-        //基底クラスに同名クラスがあるので隠蔽するのでnew演算子が必要。
-        public override bool isString() { return true; }
-        public override string getText() { return scenario; }
-    }
-
-    /// <summary>
-    /// Id(Identifier)のtoken
-    /// isIdentifier():tureを返す。他はfalseを継承。(tokenから)
-    /// getText()     :文字リテラルを返す。
-    /// lineNo        :行番号
-    /// litral        :文字リテラル
-    /// </summary>
-    public class IdToken : Token
-    {
-        private String identifier;
-        //オーバーライドされた基底クラス TokenのコンストラクターのlineNoに代入。
-        internal IdToken(int lineNo, string identifier) : base(lineNo)
-        {
-            base.lineNo = lineNo;
-            this.identifier = identifier;
-        }
-        //基底クラスの仮想メソッドをオーバーライドする。
-        public override bool isIdentifier() { return true; }
-        public override string getText() { return identifier; }
-    }
-
 }
-
-

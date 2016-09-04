@@ -1,22 +1,22 @@
 ﻿using Mura;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class main : MonoBehaviour
 {
-    private string guitxt;
-
     // Use this for initialization
     void Start()
     {
-        Debug.Log("start");
-        Lexer lexer = new Lexer();
-        lexer.ReadFile("Test");
+        List<Lexer> l = new List<Lexer>();
+        l.Add(new Lexer());
+        l.Add(new Lexer());
 
-        foreach (Token queue in lexer.queue)
-        {
-            Debug.Log(queue+"=>"+ queue.getText()+ " ;" +queue.getLineNumber());
-            Debug.Log(" id="+queue.isIdentifier()+" str:"+ queue.isString()+" num:"+queue.isNumber());
-        }
+        Debug.Log("start");
+        l[0].ReadFile("Test");
+        Debug.Log("end");
+
+        Debug.Log("start");
+        l[1].ReadFile("Test2");
         Debug.Log("end");
     }
 
